@@ -13,12 +13,10 @@ st.set_page_config(
 # 2. GAYA DESAIN CUSTOM CSS (Kekinian & Elegant UI)
 st.markdown("""
     <style>
-    /* Mengubah fontasi global ke Sans-Serif Modern */
     html, body, [data-testid="stSidebar"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Header Utama dengan Gradasi Warna Kemenkes Modern (Hijau Toska ke Biru) */
     .main-title {
         background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
         -webkit-background-clip: text;
@@ -30,32 +28,29 @@ st.markdown("""
     }
     
     .sub-title {
-        color: #64748b;
+        color: #94a3b8;
         font-size: 1.1rem;
         font-weight: 500;
         margin-bottom: 25px;
     }
     
-    /* Desain Kartu Metrik Mengambang (Floating Card UI) */
     .metric-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        background-color: #1e293b;
+        border: 1px solid #334155;
         border-radius: 16px;
         padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease;
     }
     .metric-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
     
-    /* Batas Pembatas Estetik */
     hr {
         margin-top: 1rem;
         margin-bottom: 2rem;
         border: 0;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid #334155;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -64,7 +59,7 @@ st.markdown("""
 st.markdown('<h1 class="main-title">✨ Integrasi Layanan Primer (ILP)</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">📊 Dasbor Inovasi Surveilans Jentik Berkala — UPT Puskesmas Karangpawitan, Garut</p>', unsafe_allow_html=True)
 
-# 4. DATA AKURAT: 10 Desa Wilayah Kerja UPT Puskesmas Karangpawitan
+# 4. DATA WILAYAH KERJA
 desa_list = [
     'Karangpawitan', 'Situjaya', 'Sindangpalay', 'Situgede', 'Cimurah', 
     'Sindanggalih', 'Situsari', 'Karangsari', 'Situsaeur', 'Sindanglaya'
@@ -94,9 +89,10 @@ st.sidebar.markdown("Masukkan rekapitulasi data hasil pemeriksaan kader:")
 
 desa_pilihan = st.sidebar.selectbox("Lokasi Wilayah Desa:", df['Desa'].tolist())
 
+# Perbaikan Bug Pembacaan Indeks Data Server Cloud
 indeks_desa = df[df['Desa'] == desa_pilihan].index
-current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'])
-current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'])
+current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'].values[0])
+current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'].values[0])
 
 input_periksa = st.sidebar.number_input("Total Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
@@ -120,27 +116,27 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f"""
         <div class="metric-card">
-            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🏠 TOTAL RUMAH DIPERIKSA</p>
-            <h2 style="color: #1e293b; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_dicek:,} <span style="font-size: 1rem; font-weight: 500; color: #94a3b8;">Rumah</span></h2>
-            <p style="color: #059669; font-size: 0.85rem; font-weight: 600; margin: 0;">↑ Cakupan Penuh 10 Desa</p>
+            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🏠 TOTAL RUMAH DIPERIKSA</p>
+            <h2 style="color: #f8fafc; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_dicek:,} <span style="font-size: 1rem; font-weight: 500; color: #64748b;">Rumah</span></h2>
+            <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin: 0;">↑ Cakupan Penuh 10 Desa</p>
         </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
         <div class="metric-card">
-            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🪱 TEMUAN POSITIF JENTIK</p>
-            <h2 style="color: #e11d48; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_positif:,} <span style="font-size: 1rem; font-weight: 500; color: #94a3b8;">Rumah</span></h2>
-            <p style="color: #ea580c; font-size: 0.85rem; font-weight: 600; margin: 0;">⚠ Butuh Intervensi PSN</p>
+            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🪱 TEMUAN POSITIF JENTIK</p>
+            <h2 style="color: #f43f5e; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_positif:,} <span style="font-size: 1rem; font-weight: 500; color: #64748b;">Rumah</span></h2>
+            <p style="color: #f97316; font-size: 0.85rem; font-weight: 600; margin: 0;">⚠ Butuh Intervensi PSN</p>
         </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    status_warna = "#059669" if abj_global >= 95 else "#d97706"
+    status_warna = "#10b981" if abj_global >= 95 else "#f59e0b"
     status_teks = "🟢 Memenuhi Target Nasional" if abj_global >= 95 else "🔴 Di Bawah Target Kemenkes"
     st.markdown(f"""
         <div class="metric-card">
-            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🎯 ANGKA BEBAS JENTIK (ABJ)</p>
+            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🎯 ANGKA BEBAS JENTIK (ABJ)</p>
             <h2 style="color: {status_warna}; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{abj_global:.2f}%</h2>
             <p style="color: {status_warna}; font-size: 0.85rem; font-weight: 600; margin: 0;">{status_teks}</p>
         </div>
@@ -148,19 +144,18 @@ with col3:
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# 7. BAGIAN DATA DAN GRAFIK (Kombinasi Berdampingan)
+# 7. BAGIAN DATA DAN GRAFIK
 tab1, tab2 = st.tabs(["📊 Visualisasi Grafik Distribusi Wilayah", "📋 Tabel Analisis Data Surveilans"])
 
 with tab1:
     st.write("#### Tren Temuan Rumah Positif Jentik Nyamuk Per Desa")
-    # Grafik Batang Minimalis dengan warna kustom bertema tebal
     st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
 
 with tab2:
     st.write("#### Data Pemantauan Wilayah Setempat (PWS) Kecamatan Karangpawitan")
     st.dataframe(df[['Desa', 'Rumah_Diperiksa', 'Positif_Jentik', 'Negatif_Jentik']], use_container_width=True)
 
-# 8. FOOTER UNDUH LAPORAN ELEGAN
+# 8. FOOTER UNDUH LAPORAN
 st.markdown("<hr>", unsafe_allow_html=True)
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button(
