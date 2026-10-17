@@ -3,23 +3,76 @@ import pandas as pd
 import numpy as np
 import os
 
-# Konfigurasi Tampilan Dasbor Modern
-st.set_page_config(page_title="ILP - Dasbor Jumantik", layout="wide")
+# 1. KONFIGURASI HALAMAN PREMIUM & TEMA DARK-MODE ELEGAN
+st.set_page_config(
+    page_title="ILP - Dasbor Jumantik Karangpawitan", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.title("📊 Dasbor Inovasi Surveilans Jentik Berkala (ILP)")
-st.subheader("UPT Puskesmas Karangpawitan - Dinas Kesehatan Kabupaten Garut")
-st.markdown("---")
+# 2. GAYA DESAIN CUSTOM CSS (Kekinian & Elegant UI)
+st.markdown("""
+    <style>
+    /* Mengubah fontasi global ke Sans-Serif Modern */
+    html, body, [data-testid="stSidebar"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Header Utama dengan Gradasi Warna Kemenkes Modern (Hijau Toska ke Biru) */
+    .main-title {
+        background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin-bottom: 5px;
+    }
+    
+    .sub-title {
+        color: #64748b;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 25px;
+    }
+    
+    /* Desain Kartu Metrik Mengambang (Floating Card UI) */
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Batas Pembatas Estetik */
+    hr {
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+        border: 0;
+        border-top: 1px solid #e2e8f0;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# DATA AKURAT: 10 Desa Wilayah Kerja UPT Puskesmas Karangpawitan yang Benar
+# 3. HEADER UTAMA (ELEGANT DESIGN)
+st.markdown('<h1 class="main-title">✨ Integrasi Layanan Primer (ILP)</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">📊 Dasbor Inovasi Surveilans Jentik Berkala — UPT Puskesmas Karangpawitan, Garut</p>', unsafe_allow_html=True)
+
+# 4. DATA AKURAT: 10 Desa Wilayah Kerja UPT Puskesmas Karangpawitan
 desa_list = [
     'Karangpawitan', 'Situjaya', 'Sindangpalay', 'Situgede', 'Cimurah', 
     'Sindanggalih', 'Situsari', 'Karangsari', 'Situsaeur', 'Sindanglaya'
 ]
 
-# Path Lokasi Database CSV Lokal
 DB_FILE = 'database_jumantik_karangpawitan.csv'
 
-# LOGIKA DATABASE: Inisialisasi data awal jika file belum pernah ada
+# LOGIKA DATABASE LOKAL
 if not os.path.exists(DB_FILE):
     jumlah_desa = len(desa_list)
     angka_periksa = np.full(jumlah_desa, 150)
@@ -33,66 +86,85 @@ if not os.path.exists(DB_FILE):
     })
     df_awal.to_csv(DB_FILE, index=False)
 
-# Memuat data aktif langsung dari file CSV database lokal
 df = pd.read_csv(DB_FILE)
 
-# SIDEBAR: Modul Input Data Dinamis untuk Programmer / Kader
-st.sidebar.header("📝 Formulir Update Data Lapangan")
-st.sidebar.write("Pilih desa dan masukkan hasil pemeriksaan terbaru:")
+# 5. MODUL FORMULIR SIDEBAR (UI MINIMALIS)
+st.sidebar.markdown("### 📝 Pembaruan Data Lapangan")
+st.sidebar.markdown("Masukkan rekapitulasi data hasil pemeriksaan kader:")
 
-desa_pilihan = st.sidebar.selectbox("Pilih Lokasi Desa:", df['Desa'].tolist())
+desa_pilihan = st.sidebar.selectbox("Lokasi Wilayah Desa:", df['Desa'].tolist())
 
-# Mengambil nilai data saat ini di database untuk ditampilkan di form input
-indeks_desa = df[df['Desa'] == desa_pilihan].index[0]
+indeks_desa = df[df['Desa'] == desa_pilihan].index
 current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'])
 current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'])
 
-input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
-input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
+input_periksa = st.sidebar.number_input("Total Rumah Diperiksa:", min_value=1, value=current_periksa)
+input_positif = st.sidebar.number_input("Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# TOMBOL SIMPAN KE DATABASE PERMANEN
-if st.sidebar.button("💾 Simpan Data ke Database"):
+if st.sidebar.button("💾 Simpan Permanen ke Database"):
     df.loc[indeks_desa, 'Rumah_Diperiksa'] = input_periksa
     df.loc[indeks_desa, 'Positif_Jentik'] = input_positif
     df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah disimpan secara permanen.")
+    st.sidebar.success(f"Sukses memperbarui data Desa {desa_pilihan}!")
     st.rerun()
 
-# Rumus Perhitungan Epidemiologi Otomatis Berdasarkan Data Database
+# PERHITUNGAN OTOMATIS EPIDEMIOLOGI
 df['Negatif_Jentik'] = df['Rumah_Diperiksa'] - df['Positif_Jentik']
 total_dicek = int(df['Rumah_Diperiksa'].sum())
 total_positif = int(df['Positif_Jentik'].sum())
 total_bebas_jentik = total_dicek - total_positif
-
-# Rumus Resmi ABJ Kemenkes
 abj_global = (total_bebas_jentik / total_dicek) * 100
 
-# VISUALISASI UTAMA: Kartu Metrik Modern
+# 6. VISUALISASI METRIK UTAMA BERBASIS KARTU MODERN (GRID LAYOUT)
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric(label="🏠 Total Rumah Diperiksa", value=f"{total_dicek} Rumah")
+    st.markdown(f"""
+        <div class="metric-card">
+            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🏠 TOTAL RUMAH DIPERIKSA</p>
+            <h2 style="color: #1e293b; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_dicek:,} <span style="font-size: 1rem; font-weight: 500; color: #94a3b8;">Rumah</span></h2>
+            <p style="color: #059669; font-size: 0.85rem; font-weight: 600; margin: 0;">↑ Cakupan Penuh 10 Desa</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 with col2:
-    st.metric(label="🪱 Rumah Positif Jentik (Waspada)", value=f"{total_positif} Rumah", delta="Butuh PSN", delta_color="inverse")
+    st.markdown(f"""
+        <div class="metric-card">
+            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🪱 TEMUAN POSITIF JENTIK</p>
+            <h2 style="color: #e11d48; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_positif:,} <span style="font-size: 1rem; font-weight: 500; color: #94a3b8;">Rumah</span></h2>
+            <p style="color: #ea580c; font-size: 0.85rem; font-weight: 600; margin: 0;">⚠ Butuh Intervensi PSN</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 with col3:
-    status_target = "🟢 Memenuhi Target Kemenkes" if abj_global >= 95 else "🔴 Di Bawah Target Nasional"
-    st.metric(label="🎯 Angka Bebas Jentik (ABJ) Global", value=f"{abj_global:.2f}%", delta=status_target)
+    status_warna = "#059669" if abj_global >= 95 else "#d97706"
+    status_teks = "🟢 Memenuhi Target Nasional" if abj_global >= 95 else "🔴 Di Bawah Target Kemenkes"
+    st.markdown(f"""
+        <div class="metric-card">
+            <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin: 0;">🎯 ANGKA BEBAS JENTIK (ABJ)</p>
+            <h2 style="color: {status_warna}; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{abj_global:.2f}%</h2>
+            <p style="color: {status_warna}; font-size: 0.85rem; font-weight: 600; margin: 0;">{status_teks}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("---")
+st.markdown("<hr>", unsafe_allow_html=True)
 
-# TABEL DATA INTERAKTIF: Untuk Programmer Surveilans
-st.write("### 📋 Analisis Prioritas Intervensi Berdasarkan Wilayah Kerja Desa")
-st.dataframe(df[['Desa', 'Rumah_Diperiksa', 'Positif_Jentik', 'Negatif_Jentik']], use_container_width=True)
+# 7. BAGIAN DATA DAN GRAFIK (Kombinasi Berdampingan)
+tab1, tab2 = st.tabs(["📊 Visualisasi Grafik Distribusi Wilayah", "📋 Tabel Analisis Data Surveilans"])
 
-# GRAPH INTERAKTIF: Distribusi Kasus Positif Jentik Per Desa
-st.markdown("---")
-st.write("### 📊 Grafik Distribusi Temuan Positif Jentik Nyamuk Per Desa")
-st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
+with tab1:
+    st.write("#### Tren Temuan Rumah Positif Jentik Nyamuk Per Desa")
+    # Grafik Batang Minimalis dengan warna kustom bertema tebal
+    st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
 
-# Fitur Ekspor Laporan Bulanan ke Excel/CSV
-st.markdown("---")
+with tab2:
+    st.write("#### Data Pemantauan Wilayah Setempat (PWS) Kecamatan Karangpawitan")
+    st.dataframe(df[['Desa', 'Rumah_Diperiksa', 'Positif_Jentik', 'Negatif_Jentik']], use_container_width=True)
+
+# 8. FOOTER UNDUH LAPORAN ELEGAN
+st.markdown("<hr>", unsafe_allow_html=True)
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="📥 Unduh Rekap Laporan Bulanan (.CSV) untuk Dinas Kesehatan",
+    label="📥 Ekspor Rekap Laporan Bulanan (.CSV) untuk Dinas Kesehatan",
     data=csv_data,
     file_name='laporan_abj_karangpawitan_fix.csv',
     mime='text/csv',
