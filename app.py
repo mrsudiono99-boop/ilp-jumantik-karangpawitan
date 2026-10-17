@@ -99,9 +99,10 @@ st.sidebar.markdown("Masukkan rekapitulasi data hasil pemeriksaan kader:")
 
 desa_pilihan = st.sidebar.selectbox("Lokasi Wilayah Desa:", df['Desa'].tolist())
 
+# Perbaikan Kompatibilitas Pembacaan Nilai Indkes Data Server Cloud
 indeks_desa = df[df['Desa'] == desa_pilihan].index
-current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'].values)
-current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'].values)
+current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'].values[0])
+current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'].values[0])
 
 input_periksa = st.sidebar.number_input("Total Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
@@ -155,34 +156,35 @@ with col3:
 st.markdown("### 📋 Rencana Tindak Lanjut (RTL) Epidemiologi")
 
 if abj_global < 95:
-    # Mengambil desa dengan kasus tertinggi untuk disebutkan di narasi
-    desa_tertinggi = df.sort_values(by='Positif_Jentik', ascending=False)['Desa'].iloc[0]
+    # Solusi Aman: Mengambil nama desa dengan kasus jentik tertinggi tanpa menggunakan fungsi rawan potong
+    df_urut = df.sort_values(by='Positif_Jentik', ascending=False)
+    desa_tertinggi = df_urut['Desa'].values[0]
     
     st.markdown(f"""
     <div class="rtl-box" style="border-left-color: #ef4444;">
-        <h5 style="color: #f43f5e; margin-top:0; font-weight:700;">⚠ INTRUKSI DARURAT RTL (ABJ < 95%)</h5>
+        <h5 style="color: #f43f5e; margin-top:0; font-weight:700;">⚠ INSTRUKSI DARURAT RTL (ABJ < 95%)</h5>
         <p style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
             Berdasarkan hasil analisis data pemantauan berkala, capaian Angka Bebas Jentik (ABJ) global UPT Puskesmas Karangpawitan saat ini adalah <b>{abj_global:.2f}%</b>, yang berarti <b>belum memenuhi Target Nasional Kemenkes (≥ 95%)</b>. 
             Maka dari itu, disepakati rencana tindak lanjut taktis kedinasan sebagai berikut:
         </p>
         <ul style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
             <li><b>Gebyarkan Gerakan PSN 3M Plus:</b> Menginstruksikan kader Jumantik di seluruh desa, khususnya fokus penguatan massal di wilayah <b>Desa {desa_tertinggi}</b> (area dengan temuan kasus tertinggi) untuk melakukan pembersihan serentak dalam 3x24 jam ke depan.</li>
-            <li><b>Pemberian Larvasida Sistemis:</b> Distribusi bubuk abate ke rumah warga yang penampungan airnya sulit dikuras oleh tim penanggung jawab lintas klaster.</li>
-            <li><b>Edukasi & Penyuluhan Lintas Sektor:</b> Melakukan koordinasi darurat dengan kepala desa dan ketua RT/RW setempat untuk meningkatkan kewaspadaan dini terhadap lonjakan kasus DBD sebelum siklus klinis muncul.</li>
+            <li><b>Peningkatatan Distribusi Larvasida:</b> Mendorong pembagian bubuk abate secara door-to-door ke rumah warga oleh tim penanggung jawab lintas klaster.</li>
+            <li><b>Edukasi & Kewaspadaan Wilayah:</b> Melakukan koordinasi darurat dengan aparat desa dan ketua RT/RW setempat untuk meningkatkan kewaspadaan dini terhadap bahaya lonjakan kasus DBD.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 else:
     st.markdown(f"""
     <div class="rtl-box" style="border-left-color: #10b981;">
-        <h5 style="color: #10b981; margin-top:0; font-weight:700;">🟢 INTRUKSI PEMELIHARAAN RTL (ABJ ≥ 95%)</h5>
+        <h5 style="color: #10b981; margin-top:0; font-weight:700;">🟢 INSTRUKSI PEMELIHARAAN RTL (ABJ ≥ 95%)</h5>
         <p style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
             Selamat! Capaian Angka Bebas Jentik (ABJ) global UPT Puskesmas Karangpawitan telah menyentuh angka <b>{abj_global:.2f}%</b>. Hasil ini menyatakan wilayah kerja kita <b>telah memenuhi standar aman Target Nasional Kemenkes</b>.
             Rencana tindak lanjut difokuskan pada aspek pemeliharaan lingkungan:
         </p>
         <ul style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
-            <li><b>Surveilans Rutin Mingguan:</b> Mempertahankan jadwal ronda jentik oleh kader satu minggu sekali secara konsisten untuk menjaga status zona hijau.</li>
-            <li><b>Apresiasi dan Penguatan Kader:</b> Memberikan penghargaan moral saat forum lokakarya mini (Lokmin) bulanan Puskesmas atas keberhasilan kader menjaga wilayah kerja.</li>
+            <li><b>Surveilans Rutin Berkala:</b> Mempertahankan jadwal ronda jentik oleh kader satu minggu sekali secara konsisten untuk menjaga status zona hijau.</li>
+            <li><b>Apresiasi Pokja Jumantik:</b> Memberikan penghargaan moral saat forum lokakarya mini (Lokmin) bulanan Puskesmas atas keberhasilan kader menjaga wilayah kerja.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
