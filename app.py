@@ -147,27 +147,7 @@ if not df_peta.empty:
     # Set pusat peta di rata-rata titik koordinat yang ada
     pusat_lat = df_peta['Latitude'].mean()
     pusat_lon = df_peta['Longitude'].mean()
-    
-    # Buat objek peta folium
-    peta = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=13, control_scale=True)
-    
-    # Looping memasang penanda (Pin) di setiap lokasi desa
-    for _, row in df_peta.iterrows():
-        # Penentuan warna Pin berdasarkan keparahan (Jumlah Positif Jentik)
-        if row['Positif_Jentik'] > 5:
-            warna_pin = 'red'
-            ikon = 'exclamation-sign'
-        else:
-            warna_pin = 'green'
-            ikon = 'ok-sign'
-            
-                
-        folium.Marker(
-            location=[row['Latitude'], row['Longitude']],
-            popup=folium.Popup(isi_popup, max_width=250),
-            icon=folium.Icon(color=warna_pin, icon=ikon)
-        ).add_to(peta)
-        
+   
     # Tampilkan peta ke dalam UI Streamlit secara dinamis
     st_folium(peta, width="100%", height=450, returned_objects=[])
 else:
