@@ -80,10 +80,22 @@ input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_valu
 
 # KOMPONEN SHARE LOKASI GPS (Otomatis mengambil koordinat HP kader)
 st.sidebar.markdown("---")
+# --- KODE BARU YANG RAMAH HP ---
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
-st.sidebar.info("Aktifkan GPS HP/Perangkat lalu klik tombol di bawah ini saat berada di lokasi:")
 
-location = streamlit_geolocation()
+# Membuat kontainer bergaya tombol kustom agar kotak pelacakan terlihat jelas
+with st.sidebar.container():
+    st.markdown(
+        """
+        <div style="background-color: #0c1017; padding: 10px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
+            <p style="margin: 0; font-size: 13px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Menampilkan tombol pelacak bawaan
+    location = streamlit_geolocation()
 
 # Logika penentuan koordinat baru atau tetap menggunakan koordinat lama
 if location and location.get('latitude') and location.get('longitude'):
