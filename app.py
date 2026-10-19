@@ -109,15 +109,7 @@ else:
 
 st.sidebar.markdown("---")
 
-# TOMBOL SIMPAN KE DATABASE PERMANEN
-if st.sidebar.button("💾 Simpan Data ke Database"):
-    df.loc[indeks_desa, 'Rumah_Diperiksa'] = input_periksa
-    df.loc[indeks_desa, 'Positif_Jentik'] = input_positif
-    df.loc[indeks_desa, 'Latitude'] = lat_baru
-    df.loc[indeks_desa, 'Longitude'] = lon_baru
-    df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} beserta koordinat lokasi telah disimpan.")
-    st.rerun()
+
 
 # ==========================================
 # PERHITUNGAN DAN VISUALISASI UTAMA
@@ -169,17 +161,7 @@ if not df_peta.empty:
             warna_pin = 'green'
             ikon = 'ok-sign'
             
-        # Isi teks informasi pop-up saat Pin di peta diklik
-        isi_popup = f"""
-        <div style="font-family: Arial, sans-serif; font-size: 12px; width: 180px;">
-            <b>Desa:</b> {row['Desa']}<br>
-            <hr style="margin: 5px 0;">
-            🏠 Rumah Diperiksa: {int(row['Rumah_Diperiksa'])}<br>
-            🔴 Positif Jentik: <b style="color:red;">{int(row['Positif_Jentik'])}</b><br>
-            🟢 Bebas Jentik: {int(row['Negatif_Jentik'])}
-        </div>
-        """
-        
+                
         folium.Marker(
             location=[row['Latitude'], row['Longitude']],
             popup=folium.Popup(isi_popup, max_width=250),
