@@ -2,211 +2,199 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+import folium
+from streamlit_folium import st_folium
+from streamlit_geolocation import streamlit_geolocation
 
-# 1. KONFIGURASI HALAMAN PREMIUM & TEMA DARK-MODE ELEGAN
-st.set_page_config(
-    page_title="ILP - Dasbor Jumantik Karangpawitan", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Konfigurasi Tampilan Dasbor Modern
+st.set_page_config(page_title="ILP - Dasbor Jumantik", layout="wide")
 
-# 2. GAYA DESAIN CUSTOM CSS (Kekinian & Elegant UI)
-st.markdown("""
-    <style>
-    html, body, [data-testid="stSidebar"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    .main-title {
-        background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2.8rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin-bottom: 5px;
-    }
-    
-    .sub-title {
-        color: #94a3b8;
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-bottom: 25px;
-    }
-    
-    .metric-card {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        transition: transform 0.2s ease;
-    }
-    .metric-card:hover {
-        transform: translateY(-4px);
-    }
-    
-    /* Style Kotak Narasi RTL Modern */
-    .rtl-box {
-        background-color: #0f172a;
-        border-left: 5px solid #38bdf8;
-        border-radius: 8px;
-        padding: 20px;
-        margin-top: 15px;
-        margin-bottom: 25px;
-    }
-    
-    hr {
-        margin-top: 1rem;
-        margin-bottom: 2rem;
-        border: 0;
-        border-top: 1px solid #334155;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.title("📊 Dasbor Surveilans Jentik Berkala ")
+st.subheader("UPT Puskesmas Karangpawitan - Dinas Kesehatan Kabupaten Garut")
+st.markdown("---")
 
-# 3. HEADER UTAMA (ELEGANT DESIGN)
-st.markdown('<h1 class="main-title">✨ Integrasi Layanan Primer (ILP)</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">📊 Dasbor Inovasi Surveilans Jentik Berkala — UPT Puskesmas Karangpawitan, Garut</p>', unsafe_allow_html=True)
-
-# 4. DATA WILAYAH KERJA
+# DATA AKURAT: 10 Desa Wilayah Kerja UPT Puskesmas Karangpawitan yang Benar
 desa_list = [
     'Karangpawitan', 'Situjaya', 'Sindangpalay', 'Situgede', 'Cimurah', 
     'Sindanggalih', 'Situsari', 'Karangsari', 'Situsaeur', 'Sindanglaya'
 ]
 
+# Koordinat Perkiraan Awal Tengah Desa (Sebagai Fallback jika Koordinat Kosong)
+koordinat_default = {
+    'Karangpawitan': (-7.2064, 107.9405), 'Situjaya': (-7.2100, 107.9500),
+    'Sindangpalay': (-7.2000, 107.9350), 'Situgede': (-7.2250, 107.9420),
+    'Cimurah': (-7.1850, 107.9250), 'Sindanggalih': (-7.1950, 107.9380),
+    'Situsari': (-7.2120, 107.9600), 'Karangsari': (-7.2020, 107.9480),
+    'Situsaeur': (-7.2180, 107.9550), 'Sindanglaya': (-7.1900, 107.9450)
+}
+
+# Path Lokasi Database CSV Lokal
 DB_FILE = 'database_jumantik_karangpawitan.csv'
 
-# LOGIKA DATABASE LOKAL
+# LOGIKA DATABASE: Inisialisasi data awal (ditambahkan kolom Latitude dan Longitude)
 if not os.path.exists(DB_FILE):
     jumlah_desa = len(desa_list)
     angka_periksa = np.full(jumlah_desa, 150)
     np.random.seed(42)
     angka_positif = np.random.randint(2, 13, size=jumlah_desa)
     
+    # Ambil nilai default koordinat
+    lats = [koordinat_default[d][0] for d in desa_list]
+    lons = [koordinat_default[d][1] for d in desa_list]
+    
     df_awal = pd.DataFrame({
         'Desa': desa_list,
         'Rumah_Diperiksa': list(angka_periksa),
-        'Positif_Jentik': list(angka_positif)
+        'Positif_Jentik': list(angka_positif),
+        'Latitude': lats,
+        'Longitude': lons
     })
     df_awal.to_csv(DB_FILE, index=False)
 
+# Memuat data aktif langsung dari file CSV database lokal
 df = pd.read_csv(DB_FILE)
 
-# 5. MODUL FORMULIR SIDEBAR (UI MINIMALIS)
-st.sidebar.markdown("### 📝 Pembaruan Data Lapangan")
-st.sidebar.markdown("Masukkan rekapitulasi data hasil pemeriksaan kader:")
+# Migrasi otomatis jika file CSV lama belum punya kolom Latitude/Longitude
+if 'Latitude' not in df.columns or 'Longitude' not in df.columns:
+    df['Latitude'] = df['Desa'].map(lambda d: koordinat_default.get(d, (-7.2064, 107.9405))[0])
+    df['Longitude'] = df['Desa'].map(lambda d: koordinat_default.get(d, (-7.2064, 107.9405))[1])
+    df.to_csv(DB_FILE, index=False)
 
-desa_pilihan = st.sidebar.selectbox("Lokasi Wilayah Desa:", df['Desa'].tolist())
+# ==========================================
+# SIDEBAR: Modul Input Data Dinamis
+# ==========================================
+st.sidebar.header("📝 Formulir Update Data Lapangan")
+st.sidebar.write("Pilih desa dan masukkan hasil pemeriksaan terbaru:")
 
-# Perbaikan Kompatibilitas Pembacaan Nilai Indkes Data Server Cloud
-indeks_desa = df[df['Desa'] == desa_pilihan].index
-current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'].values[0])
-current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'].values[0])
+desa_pilihan = st.sidebar.selectbox("Pilih Lokasi Desa:", df['Desa'].tolist())
 
-input_periksa = st.sidebar.number_input("Total Rumah Diperiksa:", min_value=1, value=current_periksa)
-input_positif = st.sidebar.number_input("Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
+# Mengambil nilai data saat ini di database untuk ditampilkan di form input
+indeks_desa = df[df['Desa'] == desa_pilihan].index[0]
+current_periksa = int(df.loc[indeks_desa, 'Rumah_Diperiksa'])
+current_positif = int(df.loc[indeks_desa, 'Positif_Jentik'] if not pd.isna(df.loc[indeks_desa, 'Positif_Jentik']) else 0)
+current_lat = df.loc[indeks_desa, 'Latitude']
+current_lon = df.loc[indeks_desa, 'Longitude']
 
-if st.sidebar.button("💾 Simpan Permanen ke Database"):
+input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
+input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
+
+# KOMPONEN SHARE LOKASI GPS (Otomatis mengambil koordinat HP kader)
+st.sidebar.markdown("---")
+st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
+st.sidebar.info("Aktifkan GPS HP/Perangkat lalu klik tombol di bawah ini saat berada di lokasi:")
+
+location = streamlit_geolocation()
+
+# Logika penentuan koordinat baru atau tetap menggunakan koordinat lama
+if location and location.get('latitude') and location.get('longitude'):
+    lat_baru = location['latitude']
+    lon_baru = location['longitude']
+    st.sidebar.success(f"📍 GPS Terkunci: {lat_baru:.5f}, {lon_baru:.5f}")
+else:
+    lat_baru = current_lat
+    lon_baru = current_lon
+    st.sidebar.warning(f"Menggunakan koordinat tersimpan: {lat_baru:.5f}, {lon_baru:.5f}")
+
+st.sidebar.markdown("---")
+
+# TOMBOL SIMPAN KE DATABASE PERMANEN
+if st.sidebar.button("💾 Simpan Data ke Database"):
     df.loc[indeks_desa, 'Rumah_Diperiksa'] = input_periksa
     df.loc[indeks_desa, 'Positif_Jentik'] = input_positif
+    df.loc[indeks_desa, 'Latitude'] = lat_baru
+    df.loc[indeks_desa, 'Longitude'] = lon_baru
     df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Sukses memperbarui data Desa {desa_pilihan}!")
+    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} beserta koordinat lokasi telah disimpan.")
     st.rerun()
 
-# PERHITUNGAN OTOMATIS EPIDEMIOLOGI
+# ==========================================
+# PERHITUNGAN DAN VISUALISASI UTAMA
+# ==========================================
 df['Negatif_Jentik'] = df['Rumah_Diperiksa'] - df['Positif_Jentik']
 total_dicek = int(df['Rumah_Diperiksa'].sum())
 total_positif = int(df['Positif_Jentik'].sum())
 total_bebas_jentik = total_dicek - total_positif
+
+# Rumus Resmi ABJ Kemenkes
 abj_global = (total_bebas_jentik / total_dicek) * 100
 
-# 6. VISUALISASI METRIK UTAMA BERBASIS KARTU MODERN (GRID LAYOUT)
+# Tampilan Kartu Metrik Modern
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(f"""
-        <div class="metric-card">
-            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🏠 TOTAL RUMAH DIPERIKSA</p>
-            <h2 style="color: #f8fafc; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_dicek:,} <span style="font-size: 1rem; font-weight: 500; color: #64748b;">Rumah</span></h2>
-            <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin: 0;">↑ Cakupan Penuh 10 Desa</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.metric(label="🏠 Total Rumah Diperiksa", value=f"{total_dicek} Rumah")
 with col2:
-    st.markdown(f"""
-        <div class="metric-card">
-            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🪱 TEMUAN POSITIF JENTIK</p>
-            <h2 style="color: #f43f5e; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{total_positif:,} <span style="font-size: 1rem; font-weight: 500; color: #64748b;">Rumah</span></h2>
-            <p style="color: #f97316; font-size: 0.85rem; font-weight: 600; margin: 0;">⚠ Butuh Intervensi PSN</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.metric(label="🪱 Rumah Positif Jentik (Waspada)", value=f"{total_positif} Rumah", delta="Butuh PSN", delta_color="inverse")
 with col3:
-    status_warna = "#10b981" if abj_global >= 95 else "#f59e0b"
-    status_teks = "🟢 Memenuhi Target Nasional" if abj_global >= 95 else "🔴 Di Bawah Target Kemenkes"
-    st.markdown(f"""
-        <div class="metric-card">
-            <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 600; margin: 0;">🎯 ANGKA BEBAS JENTIK (ABJ)</p>
-            <h2 style="color: {status_warna}; font-size: 2.2rem; font-weight: 700; margin: 5px 0;">{abj_global:.2f}%</h2>
-            <p style="color: {status_warna}; font-size: 0.85rem; font-weight: 600; margin: 0;">{status_teks}</p>
-        </div>
-    """, unsafe_allow_html=True)
+    status_target = "🟢 Memenuhi Target Kemenkes" if abj_global >= 95 else "🔴 Di Bawah Target Nasional"
+    st.metric(label="🎯 Angka Bebas Jentik (ABJ) Global", value=f"{abj_global:.2f}%", delta=status_target)
 
-# 7. LOGIKA NARASI OTOMATIS: RENCANA TINDAK LANJUT (RTL) ASAL KONDISI ABJ
-st.markdown("### 📋 Rencana Tindak Lanjut (RTL) Epidemiologi")
+st.markdown("---")
 
-if abj_global < 95:
-    # Solusi Aman: Mengambil nama desa dengan kasus jentik tertinggi tanpa menggunakan fungsi rawan potong
-    df_urut = df.sort_values(by='Positif_Jentik', ascending=False)
-    desa_tertinggi = df_urut['Desa'].values[0]
+# ==========================================
+# TAMPILAN MAPS/PETA SEBARAN BERDASARKAN HASIL DATA
+# ==========================================
+st.write("### 🗺️ Peta Geografis Penyebaran Temuan Jentik Nyamuk")
+st.write("Warna Pin merah mengindikasikan desa dengan kasus positif tinggi (>5 rumah).")
+
+# Hapus baris data jika ada koordinat kosong
+df_peta = df.dropna(subset=['Latitude', 'Longitude'])
+
+if not df_peta.empty:
+    # Set pusat peta di rata-rata titik koordinat yang ada
+    pusat_lat = df_peta['Latitude'].mean()
+    pusat_lon = df_peta['Longitude'].mean()
     
-    st.markdown(f"""
-    <div class="rtl-box" style="border-left-color: #ef4444;">
-        <h5 style="color: #f43f5e; margin-top:0; font-weight:700;">⚠ INSTRUKSI DARURAT RTL (ABJ < 95%)</h5>
-        <p style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
-            Berdasarkan hasil analisis data pemantauan berkala, capaian Angka Bebas Jentik (ABJ) global UPT Puskesmas Karangpawitan saat ini adalah <b>{abj_global:.2f}%</b>, yang berarti <b>belum memenuhi Target Nasional Kemenkes (≥ 95%)</b>. 
-            Maka dari itu, disepakati rencana tindak lanjut taktis kedinasan sebagai berikut:
-        </p>
-        <ul style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
-            <li><b>Gebyarkan Gerakan PSN 3M Plus:</b> Menginstruksikan kader Jumantik di seluruh desa, khususnya fokus penguatan massal di wilayah <b>Desa {desa_tertinggi}</b> (area dengan temuan kasus tertinggi) untuk melakukan pembersihan serentak dalam 3x24 jam ke depan.</li>
-            <li><b>Peningkatatan Distribusi Larvasida:</b> Mendorong pembagian bubuk abate secara door-to-door ke rumah warga oleh tim penanggung jawab lintas klaster.</li>
-            <li><b>Edukasi & Kewaspadaan Wilayah:</b> Melakukan koordinasi darurat dengan aparat desa dan ketua RT/RW setempat untuk meningkatkan kewaspadaan dini terhadap bahaya lonjakan kasus DBD.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    # Buat objek peta folium
+    peta = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=13, control_scale=True)
+    
+    # Looping memasang penanda (Pin) di setiap lokasi desa
+    for _, row in df_peta.iterrows():
+        # Penentuan warna Pin berdasarkan keparahan (Jumlah Positif Jentik)
+        if row['Positif_Jentik'] > 5:
+            warna_pin = 'red'
+            ikon = 'exclamation-sign'
+        else:
+            warna_pin = 'green'
+            ikon = 'ok-sign'
+            
+        # Isi teks informasi pop-up saat Pin di peta diklik
+        isi_popup = f"""
+        <div style="font-family: Arial, sans-serif; font-size: 12px; width: 180px;">
+            <b>Desa:</b> {row['Desa']}<br>
+            <hr style="margin: 5px 0;">
+            🏠 Rumah Diperiksa: {int(row['Rumah_Diperiksa'])}<br>
+            🔴 Positif Jentik: <b style="color:red;">{int(row['Positif_Jentik'])}</b><br>
+            🟢 Bebas Jentik: {int(row['Negatif_Jentik'])}
+        </div>
+        """
+        
+        folium.Marker(
+            location=[row['Latitude'], row['Longitude']],
+            popup=folium.Popup(isi_popup, max_width=250),
+            icon=folium.Icon(color=warna_pin, icon=ikon)
+        ).add_to(peta)
+        
+    # Tampilkan peta ke dalam UI Streamlit secara dinamis
+    st_folium(peta, width="100%", height=450, returned_objects=[])
 else:
-    st.markdown(f"""
-    <div class="rtl-box" style="border-left-color: #10b981;">
-        <h5 style="color: #10b981; margin-top:0; font-weight:700;">🟢 INSTRUKSI PEMELIHARAAN RTL (ABJ ≥ 95%)</h5>
-        <p style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
-            Selamat! Capaian Angka Bebas Jentik (ABJ) global UPT Puskesmas Karangpawitan telah menyentuh angka <b>{abj_global:.2f}%</b>. Hasil ini menyatakan wilayah kerja kita <b>telah memenuhi standar aman Target Nasional Kemenkes</b>.
-            Rencana tindak lanjut difokuskan pada aspek pemeliharaan lingkungan:
-        </p>
-        <ul style="color: #cbd5e1; font-size:0.95rem; line-height:1.6;">
-            <li><b>Surveilans Rutin Berkala:</b> Mempertahankan jadwal ronda jentik oleh kader satu minggu sekali secara konsisten untuk menjaga status zona hijau.</li>
-            <li><b>Apresiasi Pokja Jumantik:</b> Memberikan penghargaan moral saat forum lokakarya mini (Lokmin) bulanan Puskesmas atas keberhasilan kader menjaga wilayah kerja.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info("Data titik koordinat belum tersedia.")
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("---")
 
-# 8. BAGIAN DATA DAN GRAFIK
-tab1, tab2 = st.tabs(["📊 Visualisasi Grafik Distribusi Wilayah", "📋 Tabel Analisis Data Surveilans"])
+# TABEL DATA INTERAKTIF
+st.write("### 📋 Analisis Prioritas Intervensi Berdasarkan Wilayah Kerja Desa")
+st.dataframe(df[['Desa', 'Rumah_Diperiksa', 'Positif_Jentik', 'Negatif_Jentik', 'Latitude', 'Longitude']], use_container_width=True)
 
-with tab1:
-    st.write("#### Tren Temuan Rumah Positif Jentik Nyamuk Per Desa")
-    st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
+# GRAPH INTERAKTIF
+st.markdown("---")
+st.write("### 📊 Grafik Distribusi Temuan Positif Jentik Nyamuk Per Desa")
+st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
 
-with tab2:
-    st.write("#### Data Pemantauan Wilayah Setempat (PWS) Kecamatan Karangpawitan")
-    st.dataframe(df[['Desa', 'Rumah_Diperiksa', 'Positif_Jentik', 'Negatif_Jentik']], use_container_width=True)
-
-# 9. FOOTER UNDUH LAPORAN
-st.markdown("<hr>", unsafe_allow_html=True)
+# Fitur Ekspor Laporan Bulanan ke Excel/CSV
+st.markdown("---")
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="📥 Ekspor Rekap Laporan Bulanan (.CSV) untuk Dinas Kesehatan",
+    label="📥 Unduh Rekap Laporan Bulanan (.CSV) untuk Dinas Kesehatan",
     data=csv_data,
     file_name='laporan_abj_karangpawitan_fix.csv',
     mime='text/csv',
