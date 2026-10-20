@@ -134,7 +134,7 @@ with col3:
 
 st.markdown("---")
 
-# ==========================================
+======================================
 # TAMPILAN MAPS/PETA SEBARAN BERDASARKAN HASIL DATA
 # ==========================================
 st.write("### 🗺️ Peta Geografis Penyebaran Temuan Jentik Nyamuk")
@@ -144,15 +144,45 @@ st.write("Warna Pin merah mengindikasikan desa dengan kasus positif tinggi (>5 r
 df_peta = df.dropna(subset=['Latitude', 'Longitude'])
 
 if not df_peta.empty:
-    # Set pusat peta di rata-rata titik koordinat yang ada
+    # 1. Tentukan titik tengah peta
     pusat_lat = df_peta['Latitude'].mean()
     pusat_lon = df_peta['Longitude'].mean()
-   
-    # Tampilkan peta ke dalam UI Streamlit secara dinamis
+    
+    # 2. BUAT OBJEK PETA (Variabel 'peta' dideklarasikan di sini)
+    peta = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=13, control_scale=True)
+    
+    # 3. Looping memasang penanda (Pin) di setiap lokasi desa/rumah
+    for _, row in df_peta.iterrows():
+        # Penentuan warna Pin berdasarkan keparahan
+        if row['Positif_Jentik'] > 5:
+            warna_pin = 'red'
+            ikon = 'exclamation-sign'
+        else:
+            warna_pin = 'green'
+            ikon = 'ok-sign'
+            
+        # Isi teks informasi pop-up tiap lokasi saat diklik
+        isi_popup = f"""
+        <div style="font-family: Arial, sans-serif; font-size: 12px; width: 180px;">
+            <b>📍 Lokasi: Kunjungan Rumah</b><br>
+            <b>Desa:</b> {row['Desa']}<br>
+            <hr style="margin: 5px 0;">
+            🏠 Diperiksa: {int(row['Rumah_Diperiksa'])} Rumah<br>
+            🔴 Positif Jentik: <b style="color:red;">{int(row['Positif_Jentik'])}</b><br>
+        </div>
+        """
+        
+        # Pasang pin ke objek 'peta'
+        folium.Marker(
+            location=[row['Latitude'], row['Longitude']],
+            popup=folium.Popup(isi_popup, max_width=250),
+            icon=folium.Icon(color=warna_pin, icon=ikon)
+        ).add_to(peta)
+        
+    # 4. TAMPILKAN PETA (Memanggil variabel 'peta' yang sudah dibuat di atas)
     st_folium(peta, width="100%", height=450, returned_objects=[])
 else:
     st.info("Data titik koordinat belum tersedia.")
-
 st.markdown("---")
 
 # TABEL DATA INTERAKTIF
