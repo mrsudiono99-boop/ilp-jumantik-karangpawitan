@@ -134,7 +134,7 @@ with col3:
 
 st.markdown("---")
 
-======================================
+# ==========================================
 # TAMPILAN MAPS/PETA SEBARAN BERDASARKAN HASIL DATA
 # ==========================================
 st.write("### 🗺️ Peta Geografis Penyebaran Temuan Jentik Nyamuk")
