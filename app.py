@@ -78,28 +78,67 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN LOKASI GPS BARU (Menggunakan streamlit_js_eval yang jauh lebih stabil)
+# ====================================================================
+# KOMPONEN LOKASI GPS BARU (Menggunakan Hak Akses HTML5 Direktori Iframe)
+# ====================================================================
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-lat_final = current_lat
-lon_final = current_lon
+# 1. Definisikan Fungsi JavaScript murni untuk menembus batasan Iframe Streamlit
+js_gps_bypasser = """
+<script>
+function dapatkanLokasi() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                // Kirim koordinat langsung ke input box Streamlit melalui manipulasi DOM
+                const lat = position.coords.latitude.toFixed(5);
+                const lon = position.coords.longitude.toFixed(5);
+                
+                // Cari input box di halaman berdasarkan label atau urutan numerik
+                const inputs = parent.document.querySelectorAll('input[type="number"]');
+                if(inputs.length >= 4) {
+                    inputs[inputs.length - 2].value = lat;
+                    inputs[inputs.length - 1].value = lon;
+                    
+                    // Picu event pergantian data agar streamlit membaca perubahannya
+                    inputs[inputs.length - 2].dispatchEvent(new Event('change', { bubbles: true }));
+                    inputs[inputs.length - 1].dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                alert("📍 GPS Berhasil Terkunci: " + lat + ", " + lon + "\\nSilakan klik Simpan!");
+            },
+            (error) => {
+                alert("Gagal mengambil GPS: " + error.message + "\\nPastikan GPS perangkat aktif.");
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    } else {
+        alert("Browser Anda tidak mendukung deteksi lokasi.");
+    }
+}
+</script>
+<button onclick="dapatkanLokasi()" style="
+    width: 100%; 
+    background-color: #ff4b4b; 
+    color: white; 
+    border: none; 
+    padding: 10px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-weight: bold;
+    margin-bottom: 15px;
+">🛰️ KLIK DI SINI UNTUK AMBIL GPS OTOMATIS</button>
+"""
 
-# Menggunakan fitur deteksi lokasi berbasis JavaScript bawaan browser (Aman untuk laptop)
-if st.sidebar.checkbox("🌐 Aktifkan Sensor GPS Perangkat"):
-    loc = streamlit_js_eval(data_of='get_geolocation', key='get_geo')
-    if loc and 'coords' in loc:
-        lat_final = loc['coords']['latitude']
-        lon_final = loc['coords']['longitude']
-        st.sidebar.success(f"📍 GPS Terkunci: {lat_final:.5f}, {lon_final:.5f}")
-    else:
-        st.sidebar.warning("Mencari sinyal GPS... Pastikan izin lokasi browser aktif.")
+# Tampilkan tombol HTML bypasser di sidebar
+st.sidebar.components.v1.html(js_gps_bypasser, height=60)
 
-# Kolom konfirmasi angka koordinat akhir (bisa diedit manual juga jika di laptop)
-lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(lat_final), format="%.5f")
-lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(lon_final), format="%.5f")
+# Menampilkan kolom input angka agar data koordinat bisa divalidasi/diedit
+lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(current_lat), format="%.5f")
+lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(current_lon), format="%.5f")
 
 st.sidebar.markdown("---")
+
 
 # TOMBOL SIMPAN KE DATABASE PERMANEN
 if st.sidebar.button("💾 Simpan Data ke Database"):
