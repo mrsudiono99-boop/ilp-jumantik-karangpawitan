@@ -4,7 +4,7 @@ import numpy as np
 import os
 import folium
 from streamlit_folium import st_folium
-from streamlit_geolocation import streamlit_geolocation
+from streamlit_js_eval import streamlit_js_eval
 
 # Konfigurasi Tampilan Dasbor Modern
 st.set_page_config(page_title="ILP - Dasbor Jumantik", layout="wide")
@@ -78,45 +78,38 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN SHARE LOKASI GPS (Dua tombol input manual dan pelacak langsung di luar)
+# KOMPONEN LOKASI GPS BARU (Menggunakan streamlit_js_eval yang jauh lebih stabil)
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-# Input angka manual tetap disediakan agar aman
-lat_final = st.sidebar.number_input("Latitude:", value=float(current_lat), format="%.5f")
-lon_final = st.sidebar.number_input("Longitude:", value=float(current_lon), format="%.5f")
+lat_final = current_lat
+lon_final = current_lon
 
-st.sidebar.info("Gunakan tombol di bawah ini hanya jika Anda mengupdate data langsung dari HP di lapangan:")
+# Menggunakan fitur deteksi lokasi berbasis JavaScript bawaan browser (Aman untuk laptop)
+if st.sidebar.checkbox("🌐 Aktifkan Sensor GPS Perangkat"):
+    loc = streamlit_js_eval(data_of='get_geolocation', key='get_geo')
+    if loc and 'coords' in loc:
+        lat_final = loc['coords']['latitude']
+        lon_final = loc['coords']['longitude']
+        st.sidebar.success(f"📍 GPS Terkunci: {lat_final:.5f}, {lon_final:.5f}")
+    else:
+        st.sidebar.warning("Mencari sinyal GPS... Pastikan izin lokasi browser aktif.")
 
-# TAMPILAN SEMULA: Tombol kustom dan pelacak langsung muncul di luar (tanpa expander)
-st.sidebar.markdown(
-    """
-    <div style="background-color: #0c1017; padding: 8px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
-        <p style="margin: 0; font-size: 11px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
-
-location = streamlit_geolocation()
-
-if location and location.get('latitude') and location.get('longitude'):
-    lat_final = location['latitude']
-    lon_final = location['longitude']
-    st.sidebar.success(f"📍 Terkunci: {lat_final:.5f}, {lon_final:.5f}")
+# Kolom konfirmasi angka koordinat akhir (bisa diedit manual juga jika di laptop)
+lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(lat_final), format="%.5f")
+lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(lon_final), format="%.5f")
 
 st.sidebar.markdown("---")
 
-# MENAMPILKAN KEMBALI TOMBOL SIMPAN YANG HILANG
+# TOMBOL SIMPAN KE DATABASE PERMANEN
 if st.sidebar.button("💾 Simpan Data ke Database"):
     df.loc[indeks_desa, 'Rumah_Diperiksa'] = input_periksa
     df.loc[indeks_desa, 'Positif_Jentik'] = input_positif
-    df.loc[indeks_desa, 'Latitude'] = lat_final
-    df.loc[indeks_desa, 'Longitude'] = lon_final
+    df.loc[indeks_desa, 'Latitude'] = lat_input
+    df.loc[indeks_desa, 'Longitude'] = lon_input
     df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah diperbarui secara permanen.")
+    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} beserta koordinat lokasi telah disimpan.")
     st.rerun()
-
 
 # ==========================================
 # PERHITUNGAN DAN VISUALISASI UTAMA
@@ -194,7 +187,7 @@ st.markdown("---")
 st.write("### 📊 Grafik Distribusi Temuan Positif Jentik Nyamuk Per Desa")
 st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
 
-# PERBAIKAN TOMBOL EKSPOR DATA YANG TERPOTONG
+# Fitur Ekspor Laporan Bulanan ke Excel/CSV
 st.markdown("---")
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button(
