@@ -3,4 +3,4 @@ pandas
 numpy
 folium
 streamlit-folium
-streamlit-js-eval
+streamlit-location-flos
