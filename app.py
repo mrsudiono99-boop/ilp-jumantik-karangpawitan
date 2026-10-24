@@ -78,37 +78,43 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN SHARE LOKASI GPS (Otomatis mengambil koordinat HP kader)
+# KOMPONEN SHARE LOKASI GPS (Diproteksi agar aman untuk Laptop & HP)
 st.sidebar.markdown("---")
-# --- KODE BARU YANG RAMAH HP ---
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-# Membuat kontainer bergaya tombol kustom agar kotak pelacakan terlihat jelas
-with st.sidebar.container():
+# Menyediakan input angka manual agar pengguna Laptop bisa melihat/mengedit koordinat dengan stabil
+lat_final = st.sidebar.number_input("Latitude:", value=float(current_lat), format="%.5f")
+lon_final = st.sidebar.number_input("Longitude:", value=float(current_lon), format="%.5f")
+
+st.sidebar.info("Gunakan tombol di bawah ini hanya jika Anda mengupdate data langsung dari HP di lapangan:")
+
+# Menggunakan expander opsional untuk mengisolasi streamlit_geolocation agar tidak merusak peramban laptop
+with st.sidebar.expander("🔄 Aktifkan Pelacak GPS Otomatis (Khusus HP)"):
     st.markdown(
         """
-        <div style="background-color: #0c1017; padding: 10px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
-            <p style="margin: 0; font-size: 13px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
+        <div style="background-color: #0c1017; padding: 8px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
+            <p style="margin: 0; font-size: 11px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
         </div>
         """, 
         unsafe_allow_html=True
     )
-    
-    # Menampilkan tombol pelacak bawaan
     location = streamlit_geolocation()
-
-# Logika penentuan koordinat baru atau tetap menggunakan koordinat lama
-if location and location.get('latitude') and location.get('longitude'):
-    lat_baru = location['latitude']
-    lon_baru = location['longitude']
-    st.sidebar.success(f"📍 GPS Terkunci: {lat_baru:.5f}, {lon_baru:.5f}")
-else:
-    lat_baru = current_lat
-    lon_baru = current_lon
-    st.sidebar.warning(f"Menggunakan koordinat tersimpan: {lat_baru:.5f}, {lon_baru:.5f}")
+    if location and location.get('latitude') and location.get('longitude'):
+        lat_final = location['latitude']
+        lon_final = location['longitude']
+        st.success(f"📍 Terkunci: {lat_final:.5f}, {lon_final:.5f}")
 
 st.sidebar.markdown("---")
 
+# MENAMPILKAN KEMBALI TOMBOL SIMPAN YANG HILANG
+if st.sidebar.button("💾 Simpan Data ke Database"):
+    df.loc[indeks_desa, 'Rumah_Diperiksa'] = input_periksa
+    df.loc[indeks_desa, 'Positif_Jentik'] = input_positif
+    df.loc[indeks_desa, 'Latitude'] = lat_final
+    df.loc[indeks_desa, 'Longitude'] = lon_final
+    df.to_csv(DB_FILE, index=False)
+    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah diperbarui secara permanen.")
+    st.rerun()
 
 
 # ==========================================
@@ -144,16 +150,12 @@ st.write("Warna Pin merah mengindikasikan desa dengan kasus positif tinggi (>5 r
 df_peta = df.dropna(subset=['Latitude', 'Longitude'])
 
 if not df_peta.empty:
-    # 1. Tentukan titik tengah peta
     pusat_lat = df_peta['Latitude'].mean()
     pusat_lon = df_peta['Longitude'].mean()
     
-    # 2. BUAT OBJEK PETA (Variabel 'peta' dideklarasikan di sini)
     peta = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=13, control_scale=True)
     
-    # 3. Looping memasang penanda (Pin) di setiap lokasi desa/rumah
     for _, row in df_peta.iterrows():
-        # Penentuan warna Pin berdasarkan keparahan
         if row['Positif_Jentik'] > 5:
             warna_pin = 'red'
             ikon = 'exclamation-sign'
@@ -161,7 +163,6 @@ if not df_peta.empty:
             warna_pin = 'green'
             ikon = 'ok-sign'
             
-        # Isi teks informasi pop-up tiap lokasi saat diklik
         isi_popup = f"""
         <div style="font-family: Arial, sans-serif; font-size: 12px; width: 180px;">
             <b>📍 Lokasi: Kunjungan Rumah</b><br>
@@ -172,14 +173,12 @@ if not df_peta.empty:
         </div>
         """
         
-        # Pasang pin ke objek 'peta'
         folium.Marker(
             location=[row['Latitude'], row['Longitude']],
             popup=folium.Popup(isi_popup, max_width=250),
             icon=folium.Icon(color=warna_pin, icon=ikon)
         ).add_to(peta)
         
-    # 4. TAMPILKAN PETA (Memanggil variabel 'peta' yang sudah dibuat di atas)
     st_folium(peta, width="100%", height=450, returned_objects=[])
 else:
     st.info("Data titik koordinat belum tersedia.")
@@ -194,12 +193,12 @@ st.markdown("---")
 st.write("### 📊 Grafik Distribusi Temuan Positif Jentik Nyamuk Per Desa")
 st.bar_chart(data=df, x='Desa', y='Positif_Jentik', use_container_width=True)
 
-# Fitur Ekspor Laporan Bulanan ke Excel/CSV
+# PERBAIKAN TOMBOL EKSPOR DATA YANG TERPOTONG
 st.markdown("---")
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button(
     label="📥 Unduh Rekap Laporan Bulanan (.CSV) untuk Dinas Kesehatan",
     data=csv_data,
-    file_name='laporan_abj_karangpawitan_fix.csv',
-    mime='text/csv',
+    file_name='Laporan_Surveilans_Jentik_Karangpawitan.csv',
+    mime='text/csv'
 )
