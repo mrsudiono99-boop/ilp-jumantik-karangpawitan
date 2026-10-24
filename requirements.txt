@@ -3,4 +3,4 @@ pandas
 numpy
 folium
 streamlit-folium
-streamlit-geolocation
+streamlit-js-eval
