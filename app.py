@@ -78,31 +78,32 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN SHARE LOKASI GPS (Diproteksi agar aman untuk Laptop & HP)
+# KOMPONEN SHARE LOKASI GPS (Dua tombol input manual dan pelacak langsung di luar)
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-# Menyediakan input angka manual agar pengguna Laptop bisa melihat/mengedit koordinat dengan stabil
+# Input angka manual tetap disediakan agar aman
 lat_final = st.sidebar.number_input("Latitude:", value=float(current_lat), format="%.5f")
 lon_final = st.sidebar.number_input("Longitude:", value=float(current_lon), format="%.5f")
 
 st.sidebar.info("Gunakan tombol di bawah ini hanya jika Anda mengupdate data langsung dari HP di lapangan:")
 
-# Menggunakan expander opsional untuk mengisolasi streamlit_geolocation agar tidak merusak peramban laptop
-with st.sidebar.expander("🔄 Aktifkan Pelacak GPS Otomatis (Khusus HP)"):
-    st.markdown(
-        """
-        <div style="background-color: #0c1017; padding: 8px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
-            <p style="margin: 0; font-size: 11px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    location = streamlit_geolocation()
-    if location and location.get('latitude') and location.get('longitude'):
-        lat_final = location['latitude']
-        lon_final = location['longitude']
-        st.success(f"📍 Terkunci: {lat_final:.5f}, {lon_final:.5f}")
+# TAMPILAN SEMULA: Tombol kustom dan pelacak langsung muncul di luar (tanpa expander)
+st.sidebar.markdown(
+    """
+    <div style="background-color: #0c1017; padding: 8px; border-radius: 5px; border: 1px solid #1f2937; text-align: center; margin-bottom: 10px;">
+        <p style="margin: 0; font-size: 11px; color: #38bdf8; font-weight: bold;">👇 KETUK KOTAK DI BAWAH INI UNTUK AMBIL GPS 👇</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
+location = streamlit_geolocation()
+
+if location and location.get('latitude') and location.get('longitude'):
+    lat_final = location['latitude']
+    lon_final = location['longitude']
+    st.sidebar.success(f"📍 Terkunci: {lat_final:.5f}, {lon_final:.5f}")
 
 st.sidebar.markdown("---")
 
