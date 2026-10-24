@@ -4,7 +4,6 @@ import numpy as np
 import os
 import folium
 from streamlit_folium import st_folium
-from streamlit_location_flos import streamlit_location
 
 # Konfigurasi Tampilan Dasbor Modern
 st.set_page_config(page_title="ILP - Dasbor Jumantik", layout="wide")
@@ -78,26 +77,13 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN LOKASI GPS BARU YANG SUPER STABIL
+# KOMPONEN KOORDINAT MANUAL YANG AMAN DAN PASTI BEBAS CRASH
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-lat_final = current_lat
-lon_final = current_lon
-
-# Menampilkan tombol GPS bawaan library khusus Streamlit Cloud
-st.sidebar.write("Klik tombol di bawah untuk mendapatkan koordinat otomatis:")
-with st.sidebar:
-    lokasi_gps = streamlit_location(button_text="📡 Ambil GPS Otomatis")
-
-if lokasi_gps and lokasi_gps.get('latitude') and lokasi_gps.get('longitude'):
-    lat_final = lokasi_gps['latitude']
-    lon_final = lokasi_gps['longitude']
-    st.sidebar.success(f"📍 GPS Terkunci: {lat_final:.5f}, {lon_final:.5f}")
-
-# Kolom angka koordinat tetap ditampilkan agar pengguna laptop bisa melihat/mengedit manual jika perlu
-lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(lat_final), format="%.5f")
-lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(lon_final), format="%.5f")
+# Biarkan kader memasukkan koordinat atau membiarkannya default desa
+lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(current_lat), format="%.5f")
+lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(current_lon), format="%.5f")
 
 st.sidebar.markdown("---")
 
@@ -108,7 +94,7 @@ if st.sidebar.button("💾 Simpan Data ke Database"):
     df.loc[indeks_desa, 'Latitude'] = lat_input
     df.loc[indeks_desa, 'Longitude'] = lon_input
     df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} beserta koordinat lokasi telah disimpan.")
+    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah disimpan.")
     st.rerun()
 
 # ==========================================
