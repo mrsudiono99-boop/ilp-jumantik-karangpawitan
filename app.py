@@ -77,13 +77,52 @@ current_lon = df.loc[indeks_desa, 'Longitude']
 input_periksa = st.sidebar.number_input("Jumlah Rumah Diperiksa:", min_value=1, value=current_periksa)
 input_positif = st.sidebar.number_input("Jumlah Rumah Positif Jentik:", min_value=0, max_value=int(input_periksa), value=current_positif)
 
-# KOMPONEN KOORDINAT MANUAL YANG AMAN DAN PASTI BEBAS CRASH
+# ====================================================================
+# MODUL KLIK GPS AMAN (Menggunakan Metode Native Dialog HTML5 & JavaScript)
+# ====================================================================
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Koordinat Lokasi Kunjungan")
 
-# Biarkan kader memasukkan koordinat atau membiarkannya default desa
-lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(current_lat), format="%.5f")
-lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(current_lon), format="%.5f")
+# State penampung koordinat agar tidak memicu muat ulang paksa
+if 'lat_temp' not in st.session_state:
+    st.session_state.lat_temp = current_lat
+if 'lon_temp' not in st.session_state:
+    st.session_state.lon_temp = current_lon
+
+# Sinkronisasi state saat dropdown desa berubah
+if st.sidebar.button("🔄 Panggil Koordinat Bawaan Desa"):
+    st.session_state.lat_temp = current_lat
+    st.session_state.lon_temp = current_lon
+    st.rerun()
+
+# Tombol pemicu sensor GPS asli bawaan browser yang aman dari crash
+if st.sidebar.button("🛰️ KETUK DI SINI UNTUK AMBIL GPS"):
+    st.sidebar.info("Meminta akses lokasi ke browser Anda...")
+    # Memanggil script background bawaan browser secara aman
+    st.components.v1.html(
+        """
+        <script>
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    window.parent.postMessage({type: 'streamlit:set_widget_value', value: [lat, lon]}, '*');
+                    alert("📍 GPS Berhasil Mengunci Koordinat Anda!\\nSilakan klik Simpan ke Database.");
+                },
+                function(error) {
+                    alert("Gagal mengambil GPS: " + error.message + "\\nPastikan setelan lokasi perangkat aktif.");
+                }
+            );
+        }
+        </script>
+        """,
+        height=0
+    )
+
+# Input manual angka koordinat agar fleksibel jika digunakan pada laptop kantor
+lat_input = st.sidebar.number_input("Latitude Terkini:", value=float(st.session_state.lat_temp), format="%.5f")
+lon_input = st.sidebar.number_input("Longitude Terkini:", value=float(st.session_state.lon_temp), format="%.5f")
 
 st.sidebar.markdown("---")
 
@@ -94,7 +133,9 @@ if st.sidebar.button("💾 Simpan Data ke Database"):
     df.loc[indeks_desa, 'Latitude'] = lat_input
     df.loc[indeks_desa, 'Longitude'] = lon_input
     df.to_csv(DB_FILE, index=False)
-    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah disimpan.")
+    st.sidebar.success(f"Berhasil! Data Desa {desa_pilihan} telah disimpan secara permanen.")
+    st.session_state.lat_temp = lat_input
+    st.session_state.lon_temp = lon_input
     st.rerun()
 
 # ==========================================
