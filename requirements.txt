@@ -3,4 +3,3 @@ pandas
 numpy
 folium
 streamlit-folium
-streamlit-location-flos
